@@ -1,43 +1,23 @@
 package org.allenai.scienceparse;
 
-import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.gs.collections.api.tuple.Pair;
+import com.gs.collections.impl.tuple.Tuples;
+import lombok.extern.slf4j.Slf4j;
+import org.allenai.ml.sequences.crf.CRFModel;
+import org.allenai.scienceparse.ExtractReferences.BibRecordParser;
+import org.allenai.scienceparse.ExtractedMetadata.LabelSpan;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import org.allenai.ml.linalg.DenseVector;
-import org.allenai.ml.linalg.Vector;
-import org.allenai.ml.sequences.StateSpace;
-import org.allenai.ml.sequences.crf.CRFFeatureEncoder;
-import org.allenai.ml.sequences.crf.CRFModel;
-import org.allenai.ml.sequences.crf.CRFWeightsEncoder;
-import org.allenai.ml.util.IOUtils;
-import org.allenai.ml.util.Indexer;
-import org.allenai.scienceparse.ExtractReferences.BibRecordParser;
-import org.allenai.scienceparse.ExtractReferences.NamedYear;
-import org.allenai.scienceparse.ExtractedMetadata.LabelSpan;
-
-import com.gs.collections.api.tuple.Pair;
-import com.gs.collections.impl.tuple.Tuples;
-
-import lombok.val;
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class CRFBibRecordParser implements BibRecordParser {
@@ -231,7 +211,7 @@ public class CRFBibRecordParser implements BibRecordParser {
       } else if (author == null && ls.tag.equals(ExtractedMetadata.authorTag)) {
         author = PDFToCRFInput.stringAtForStringList(toks, ls.loc);
       } else if (venue == null && ls.tag.equals(ExtractedMetadata.venueTag)) {
-        venue = PDFToCRFInput.stringAtForStringList(toks, ls.loc); 
+        venue = PDFToCRFInput.stringAtForStringList(toks, ls.loc);
       } else if (year == null && ls.tag.equals(ExtractedMetadata.yearTag)) {
         year = PDFToCRFInput.stringAtForStringList(toks, ls.loc);
       }
@@ -245,11 +225,17 @@ public class CRFBibRecordParser implements BibRecordParser {
 //    log.info("year first extracted: " + year);
     
     int iYear = -1;
-    if(year == null) { //backoff to any year-like string
-      Matcher mY = RegexWithTimeout.matcher(ReferencesPredicateExtractor.yearPattern, line);
-      while(mY.find()) {
+    if(year == null && venue != null) { 
+      // check venue first, as sometimes year is at end
+      Matcher mY = RegexWithTimeout.matcher(ReferencesPredicateExtractor.yearPattern, venue);
+      while (mY.find())
         year = mY.group(1);
-      }
+    }
+    if(year == null) {
+      // check whole line
+      Matcher mY = RegexWithTimeout.matcher(ReferencesPredicateExtractor.yearPattern, line);
+      while(mY.find())
+        year = mY.group(1);
     }
     if(year != null)
      iYear = ExtractReferences.extractRefYear(year);

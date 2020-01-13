@@ -1,10 +1,3 @@
-
-description := "Java CLI to extract titles, authors, abstracts, body text, and bibliographies from scholarly documents"
-
-name := "science-parse-cli"
-
-organization := "org.allenai.scienceparse"
-
 javaOptions in run += s"-Xmx10G"
 
 fork := true
@@ -18,8 +11,8 @@ assemblyMergeStrategy in assembly := {
 
 libraryDependencies ++= Seq(
   "org.slf4j" % "jcl-over-slf4j" % "1.7.7",
-  "com.fasterxml.jackson.core" % "jackson-core" % "2.7.2",
-  "com.fasterxml.jackson.core" % "jackson-databind" % "2.7.2",
-  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.7.2",
+  "com.fasterxml.jackson.core" % "jackson-core" % "2.7.9",
+  "com.fasterxml.jackson.core" % "jackson-databind" % "2.7.9",
+  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.7.9",
   "com.github.scopt" %% "scopt" % "3.4.0"
 )
